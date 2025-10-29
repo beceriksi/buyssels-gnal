@@ -2,7 +2,7 @@ name: MEXC Futures Signal Bot
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/15 * * * *"  # Her 15 dakikada bir
   workflow_dispatch:
 
 jobs:
@@ -21,4 +21,7 @@ jobs:
         run: pip install requests pandas numpy
 
       - name: Sinyal botunu çalıştır
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
