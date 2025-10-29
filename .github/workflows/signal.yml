@@ -1,28 +1,33 @@
-name: MEXC Signals Bot
+name: Mum Bot Otomatik Çalıştırma
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Her 15 dakikada bir çalışır
-  workflow_dispatch:
+    # Her 15 dakikada bir çalıştır
+    - cron: "*/15 * * * *"
+  workflow_dispatch:  # İstersen manuel çalıştırma için de
+    inputs: {}
 
 jobs:
-  run:
+  run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Repo'yu klonla
+      - name: Repo'yu checkout et
         uses: actions/checkout@v3
 
       - name: Python kur
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: 3.11
 
-      - name: Bağımlılıkları yükle
+      - name: Paketleri yükle
         run: |
-          pip install requests pandas
+          python -m pip install --upgrade pip
+          pip install pandas requests matplotlib
 
-      - name: Botu çalıştır
-        run: python main.py
+      - name: Mum Botu Çalıştır
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: |
+          python main.py
