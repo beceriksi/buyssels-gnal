@@ -9,6 +9,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 MEXC_FUTURES_URL = "https://contract.mexc.com/api/v1/contract/tickers"
 
+# =================== Telegram Functions ===================
 def send_telegram(message):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print("❌ Telegram bilgileri eksik! Lütfen secretleri kontrol et.")
@@ -22,6 +23,10 @@ def send_telegram(message):
             print("Hata mesajı:", r.text)
     except Exception as e:
         print(f"Telegram error: {e}")
+
+def send_test_message():
+    print("🔹 Telegram test mesajı gönderiliyor...")
+    send_telegram("✅ Bot çalışıyor! Bu test mesajıdır.")
 
 # =================== Signal Detection ===================
 def detect_signals(df):
@@ -49,6 +54,10 @@ def detect_signals(df):
 # =================== Main ===================
 def main():
     print(f"=== Çalışıyor... {datetime.now()} ===")
+    
+    # Test mesajını hemen gönder
+    send_test_message()
+
     try:
         response = requests.get(MEXC_FUTURES_URL, timeout=10)
         if response.status_code != 200:
