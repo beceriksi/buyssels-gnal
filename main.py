@@ -1,29 +1,36 @@
 import requests
 import pandas as pd
-import time
 import os
 from datetime import datetime
 
+# =================== Telegram Settings ===================
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 MEXC_FUTURES_URL = "https://contract.mexc.com/api/v1/contract/tickers"
 
 def send_telegram(message):
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("❌ Telegram bilgileri eksik! Lütfen secretleri kontrol et.")
+        return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message}
     try:
-        requests.post(url, json=payload)
+        r = requests.post(url, json=payload)
+        print(f"Telegram mesaj durumu: {r.status_code}")
+        if r.status_code != 200:
+            print("Hata mesajı:", r.text)
     except Exception as e:
         print(f"Telegram error: {e}")
 
+# =================== Signal Detection ===================
 def detect_signals(df):
     signals = []
     for _, row in df.iterrows():
         symbol = row["symbol"]
-        price_change = float(row["rise_fall_rate"])
-        volume = float(row["amount"])
-        last_price = float(row["fair_price"])
+        price_change = float(row.get("rise_fall_rate", 0))
+        volume = float(row.get("amount", 0))
+        last_price = float(row.get("fair_price", 0))
 
         # === BUY SINYALİ ===
         if price_change > 2 and volume > 1000000:
@@ -39,11 +46,20 @@ def detect_signals(df):
 
     return signals
 
+# =================== Main ===================
 def main():
     print(f"=== Çalışıyor... {datetime.now()} ===")
     try:
-        response = requests.get(MEXC_FUTURES_URL)
+        response = requests.get(MEXC_FUTURES_URL, timeout=10)
+        if response.status_code != 200:
+            print(f"API hatası: {response.status_code}")
+            return
+
         data = response.json().get("data", [])
+        if not data:
+            print("❌ API'den veri alınamadı!")
+            return
+
         df = pd.DataFrame(data)
         signals = detect_signals(df)
 
