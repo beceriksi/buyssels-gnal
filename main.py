@@ -1,4 +1,4 @@
-            continue
+          
         df = detect_signals(df)
         last = df.iloc[-1]
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
