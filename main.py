@@ -10,7 +10,7 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 INTERVAL = "1h"
 LIMIT = 200
 
-# === Telegram gönderim fonksiyonu ===
+# === Telegram gönderim ===
 def send_message(message):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print("Telegram bilgileri eksik.")
@@ -20,21 +20,6 @@ def send_message(message):
         requests.post(url, data={"chat_id": CHAT_ID, "text": message})
     except Exception as e:
         print("Telegram hatası:", e)
-
-# === Sinyal tespiti ===
-def detect_signals(df):
-    df['ma_fast'] = df['close'].rolling(9).mean()
-    df['ma_slow'] = df['close'].rolling(21).mean()
-    df['rsi'] = calc_rsi(df['close'])
-
-    last = df.iloc[-1]
-    prev = df.iloc[-2]
-
-    if last['ma_fast'] > last['ma_slow'] and prev['ma_fast'] <= prev['ma_slow'] and last['rsi'] < 70:
-        return "BUY"
-    elif last['ma_fast'] < last['ma_slow'] and prev['ma_fast'] >= prev['ma_slow'] and last['rsi'] > 30:
-        return "SELL"
-    return None
 
 # === RSI hesaplama ===
 def calc_rsi(series, period=14):
@@ -57,22 +42,51 @@ def get_klines(symbol):
             return None
         df = pd.DataFrame(data["data"])
         df.columns = ["time", "open", "high", "low", "close", "volume"]
-        df["close"] = df["close"].astype(float)
+        df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
         return df
     except Exception as e:
         print(f"API hatası ({symbol}):", e)
         return None
 
+# === Sinyal analizi ===
+def detect_signals(df):
+    df['ma_fast'] = df['close'].rolling(9).mean()
+    df['ma_slow'] = df['close'].rolling(21).mean()
+    df['rsi'] = calc_rsi(df['close'])
+    df['vol_avg'] = df['volume'].rolling(10).mean()
+
+    last = df.iloc[-1]
+    prev = df.iloc[-2]
+    signal = []
+
+    # --- BUY/SELL sinyalleri ---
+    if last['ma_fast'] > last['ma_slow'] and prev['ma_fast'] <= prev['ma_slow'] and last['rsi'] < 70:
+        signal.append("🟢 BUY sinyali")
+    elif last['ma_fast'] < last['ma_slow'] and prev['ma_fast'] >= prev['ma_slow'] and last['rsi'] > 30:
+        signal.append("🔴 SELL sinyali")
+
+    # --- Balina satış tespiti ---
+    avg_volume = df['volume'].iloc[-11:-1].mean()
+    price_change = (last['close'] - df['close'].iloc[-4]) / df['close'].iloc[-4] * 100
+    if last['volume'] > 2 * avg_volume and last['close'] < last['open'] and price_change > -3:
+        signal.append("🐋 BALİNA SATIŞI tespit edildi (henüz çok düşmedi)")
+
+    # --- Hacim patlaması ---
+    if last['volume'] > 3 * avg_volume:
+        signal.append("💥 HACİM PATLAMASI var")
+
+    return signal
+
 # === Ana fonksiyon ===
 def main():
-    coins = ["BTC", "ETH", "SOL", "BNB", "DOGE"]  # örnek liste
+    coins = ["BTC", "ETH", "SOL", "BNB", "DOGE"]  # Futures destekli coinler örnek
     for coin in coins:
         df = get_klines(coin)
         if df is None or len(df) < 50:
             continue
-        signal = detect_signals(df)
-        if signal:
-            msg = f"{coin} {signal} sinyali geldi! ({INTERVAL})"
+        signals = detect_signals(df)
+        if signals:
+            msg = f"{coin} ({INTERVAL})\n" + "\n".join(signals)
             print(msg)
             send_message(msg)
 
