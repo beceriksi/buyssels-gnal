@@ -25,8 +25,7 @@ def send_telegram(message):
         print(f"Telegram error: {e}")
 
 def send_test_message():
-    print("🔹 Telegram test mesajı gönderiliyor...")
-    send_telegram("✅ Bot çalışıyor! Bu test mesajıdır.")
+    print("🔹 Telegram test mesaj fonksiyonu hazır, ancak otomatik tetiklenmiyor.")
 
 # =================== Signal Detection ===================
 def detect_signals(df):
@@ -54,9 +53,9 @@ def detect_signals(df):
 # =================== Main ===================
 def main():
     print(f"=== Çalışıyor... {datetime.now()} ===")
-    
-    # Test mesajını hemen gönder
-    send_test_message()
+
+    # ❌ Test mesaj satırı kapatıldı.
+    # send_test_message()
 
     try:
         response = requests.get(MEXC_FUTURES_URL, timeout=10)
